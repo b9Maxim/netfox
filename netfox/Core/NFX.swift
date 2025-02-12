@@ -17,6 +17,11 @@ private func podPlistVersion() -> String? {
     return path
 }
 
+internal func nfxPrint(_ value: String) {
+    guard NFX.sharedInstance().printLoggingEnabled else { return }
+    print(value)
+}
+
 // TODO: Carthage support
 let nfxVersion = podPlistVersion() ?? "0"
 
@@ -24,15 +29,15 @@ let nfxVersion = podPlistVersion() ?? "0"
 open class NFX: NSObject {
     
     // MARK: - Properties
-    #if os(OSX)
-        var windowController: NFXWindowController?
-        let mainMenu: NSMenu? = NSApp.mainMenu?.items[1].submenu
-        var nfxMenuItem: NSMenuItem = NSMenuItem(title: "netfox", action: #selector(NFX.show), keyEquivalent: String.init(describing: (character: NSF9FunctionKey, length: 1)))
-    #endif
+#if os(OSX)
+    var windowController: NFXWindowController?
+    let mainMenu: NSMenu? = NSApp.mainMenu?.items[1].submenu
+    var nfxMenuItem: NSMenuItem = NSMenuItem(title: "netfox", action: #selector(NFX.show), keyEquivalent: String.init(describing: (character: NSF9FunctionKey, length: 1)))
+#endif
     
-    #if os(iOS)
-        fileprivate var navigationViewController: UINavigationController?
-    #endif
+#if os(iOS)
+    fileprivate var navigationViewController: UINavigationController?
+#endif
     
     fileprivate enum Constants: String {
         case alreadyStartedMessage = "Already started!"
@@ -69,22 +74,24 @@ open class NFX: NSObject {
         case shake
         case custom
     }
-
+    /// Change this value to `true` to show internal print logging in the console.
+    public var printLoggingEnabled: Bool = false
+    
     @objc open func start() {
         guard !started else {
             showMessage(Constants.alreadyStartedMessage.rawValue)
             return
         }
-
+        
         started = true
         URLSessionConfiguration.implementNetfox()
         register()
         enable()
         fileStorageInit()
         showMessage(Constants.startedMessage.rawValue)
-        #if os(OSX)
+#if os(OSX)
         addNetfoxToMainMenu()
-        #endif
+#endif
     }
     
     @objc open func stop() {
@@ -98,9 +105,9 @@ open class NFX: NSObject {
         clearOldData()
         started = false
         showMessage(Constants.stoppedMessage.rawValue)
-        #if os(OSX)
+#if os(OSX)
         removeNetfoxFromMainmenu()
-        #endif
+#endif
     }
     
     fileprivate func showMessage(_ msg: String) {
@@ -142,13 +149,13 @@ open class NFX: NSObject {
     
     @objc open func setGesture(_ gesture: ENFXGesture) {
         selectedGesture = gesture
-        #if os(OSX)
+#if os(OSX)
         if gesture == .shake {
             addNetfoxToMainMenu()
         } else {
             removeNetfoxFromMainmenu()
         }
-        #endif
+#endif
     }
     
     @objc open func show() {
@@ -156,20 +163,20 @@ open class NFX: NSObject {
         showNFX()
     }
     
-    #if os(iOS)
+#if os(iOS)
     @objc open func show(on rootViewController: UIViewController) {
         guard started, presented == false else { return }
-
+        
         showNFX(on: rootViewController)
         presented = true
     }
-    #endif
+#endif
     
     @objc open func hide() {
         guard started else { return }
         hideNFX()
     }
-
+    
     @objc open func toggle()
     {
         guard self.started else { return }
@@ -219,7 +226,7 @@ open class NFX: NSObject {
             self.lastVisitDate = Date()
         }
     }
-
+    
     fileprivate func toggleNFX() {
         presented ? hideNFX() : showNFX()
     }
@@ -256,12 +263,12 @@ open class NFX: NSObject {
 extension NFX {
     fileprivate var presentingViewController: UIViewController? {
         var rootViewController = UIWindow.keyWindow?.rootViewController
-		while let controller = rootViewController?.presentedViewController {
-			rootViewController = controller
-		}
+        while let controller = rootViewController?.presentedViewController {
+            rootViewController = controller
+        }
         return rootViewController
     }
-
+    
     fileprivate func showNFXFollowingPlatform() {
         showNFX(on: presentingViewController)
     }
@@ -272,7 +279,7 @@ extension NFX {
         navigationController.navigationBar.tintColor = UIColor.NFXOrangeColor()
         navigationController.navigationBar.barTintColor = UIColor.NFXStarkWhiteColor()
         navigationController.navigationBar.titleTextAttributes = [.foregroundColor: UIColor.NFXOrangeColor()]
-
+        
         if #available(iOS 13.0, *) {
             let appearence = UINavigationBarAppearance()
             
@@ -301,7 +308,7 @@ extension NFX {
 }
 
 extension NFX: UIAdaptivePresentationControllerDelegate {
-
+    
     public func presentationControllerDidDismiss(_ presentationController: UIPresentationController)
     {
         guard self.started else { return }
@@ -310,7 +317,7 @@ extension NFX: UIAdaptivePresentationControllerDelegate {
 }
 
 #elseif os(OSX)
-    
+
 extension NFX {
     
     public func windowDidClose() {
@@ -340,7 +347,7 @@ extension NFX {
     public func showNFXFollowingPlatform()  {
         if windowController == nil {
             let nibName = Constants.nibName.rawValue
-
+            
             windowController = NFXWindowController(windowNibName: nibName)
         }
         windowController?.showWindow(nil)
